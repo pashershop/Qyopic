@@ -33,7 +33,7 @@ export function ImageCard({ image, onSelect, onDownload }: ImageCardProps) {
   };
 
   return (
-    <article className="break-inside-avoid mb-5 group">
+    <article className="break-inside-avoid mb-3 sm:mb-6 group">
       <div
         onClick={() => onSelect(image)}
         onKeyDown={(e) => {
@@ -99,12 +99,12 @@ export function ImageCard({ image, onSelect, onDownload }: ImageCardProps) {
         </div>
 
         {/* Mobile Caption & Download Row (Always accessible on touch screens) */}
-        <div className="flex md:hidden items-center justify-between gap-3 p-3 bg-white border-t border-[#E4E4E7]">
+        <div className="flex md:hidden items-center justify-between gap-2 p-2.5 sm:p-3 bg-white border-t border-[#E4E4E7]">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-[#0A0A0A] truncate">
+            <h3 className="text-xs sm:text-sm font-semibold text-[#0A0A0A] truncate">
               {image.title}
             </h3>
-            <p className="text-xs text-[#71717A] mt-0.5 truncate">
+            <p className="text-[11px] sm:text-xs text-[#71717A] mt-0.5 truncate">
               {image.category} · {image.sourceType}
             </p>
           </div>

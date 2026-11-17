@@ -37,7 +37,7 @@ export function MasonryGrid({
   }
 
   return (
-    <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-5">
+    <div className="columns-2 gap-3 sm:gap-6">
       {images.map((image) => (
         <ImageCard
           key={image.id}

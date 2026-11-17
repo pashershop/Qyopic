@@ -20,18 +20,11 @@ Qyopic is configured as a zero-backend, static SPA ready for **Cloudflare Pages*
 
 ## Option 2: Direct CLI Deploy (Wrangler)
 
-### Cloudflare Pages CLI
+### Cloudflare Pages CLI (`wrangler.jsonc`)
 ```bash
 npm install
 npm run build
 npx wrangler pages deploy dist --project-name=qyopic
-```
-
-### Cloudflare Workers Static Assets (`wrangler.jsonc`)
-```bash
-npm install
-npm run build
-npx wrangler deploy
 ```
 
 ---
