@@ -10,7 +10,6 @@ import {
   downloadImageFile,
   filterImages,
   getAllImages,
-  getCategoryCounts,
 } from '@/src/services/imageService';
 import {
   CATEGORIES,
@@ -128,8 +127,6 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
-
-  const categoryCounts = useMemo(() => getCategoryCounts(images), [images]);
 
   const isFiltering =
     searchQuery.trim() !== '' ||
@@ -307,7 +304,6 @@ export default function App() {
             <CategoryBar
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}
-              categoryCounts={categoryCounts}
               sourceFilter={sourceFilter}
               onSelectSourceFilter={setSourceFilter}
             />

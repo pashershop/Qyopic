@@ -7,7 +7,6 @@ import {
 interface CategoryBarProps {
   selectedCategory: Category;
   onSelectCategory: (category: Category) => void;
-  categoryCounts: Record<Category, number>;
   sourceFilter: SourceFilter;
   onSelectSourceFilter: (source: SourceFilter) => void;
 }
@@ -21,7 +20,6 @@ const SOURCE_OPTIONS: SourceFilter[] = [
 export function CategoryBar({
   selectedCategory,
   onSelectCategory,
-  categoryCounts,
   sourceFilter,
   onSelectSourceFilter,
 }: CategoryBarProps) {
@@ -40,7 +38,6 @@ export function CategoryBar({
         >
           {CATEGORIES.map((category) => {
             const isActive = selectedCategory === category;
-            const count = categoryCounts[category] ?? 0;
 
             return (
               <button
@@ -49,20 +46,13 @@ export function CategoryBar({
                 aria-selected={isActive}
                 type="button"
                 onClick={() => onSelectCategory(category)}
-                className={`inline-flex items-center gap-2 h-11 sm:h-10 px-4 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] ${
+                className={`inline-flex items-center h-11 sm:h-10 px-4 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] ${
                   isActive
                     ? 'bg-[#0A0A0A] text-white'
                     : 'bg-[#F4F4F5] text-[#3F3F46] hover:bg-[#E4E4E7] hover:text-[#0A0A0A] active:bg-[#E4E4E7]'
                 }`}
               >
                 <span>{category}</span>
-                <span
-                  className={`font-mono text-xs tabular-nums ${
-                    isActive ? 'text-white/70' : 'text-[#71717A]'
-                  }`}
-                >
-                  {count}
-                </span>
               </button>
             );
           })}
