@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryBar } from '@/src/components/CategoryBar';
 import { Footer } from '@/src/components/Footer';
 import { Header } from '@/src/components/Header';
@@ -12,22 +12,88 @@ import {
   getAllImages,
   getCategoryCounts,
 } from '@/src/services/imageService';
-import type {
-  Category,
-  ImageItem,
-  InfoModalType,
-  SourceFilter,
+import {
+  CATEGORIES,
+  type Category,
+  type ImageItem,
+  type InfoModalType,
+  type SourceFilter,
 } from '@/src/types/image';
+
+function readInitialParams(allImages: ImageItem[]) {
+  if (typeof window === 'undefined') {
+    return {
+      query: '',
+      category: 'All' as Category,
+      source: 'All' as SourceFilter,
+      imageId: null as string | null,
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const rawQuery = params.get('q') ?? '';
+  const rawCategory = params.get('category') ?? 'All';
+  const rawSource = params.get('source') ?? 'All';
+  const rawImageSlug = params.get('image');
+
+  const validCategory = (CATEGORIES as readonly string[]).includes(rawCategory)
+    ? (rawCategory as Category)
+    : 'All';
+
+  const validSource: SourceFilter =
+    rawSource === 'AI Generated' || rawSource === 'Licensed Stock'
+      ? rawSource
+      : 'All';
+
+  const matchedImage = rawImageSlug
+    ? allImages.find(
+        (item) => item.slug === rawImageSlug || item.id === rawImageSlug
+      )
+    : undefined;
+
+  return {
+    query: rawQuery,
+    category: validCategory,
+    source: validSource,
+    imageId: matchedImage ? matchedImage.id : null,
+  };
+}
 
 export default function App() {
   const [images, setImages] = useState<ImageItem[]>(() => getAllImages());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category>('All');
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const initialState = useMemo(() => readInitialParams(images), []);
+
+  const [searchQuery, setSearchQuery] = useState(initialState.query);
+  const [selectedCategory, setSelectedCategory] = useState<Category>(
+    initialState.category
+  );
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>(
+    initialState.source
+  );
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(
+    initialState.imageId
+  );
   const [infoModal, setInfoModal] = useState<InfoModalType>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    if (selectedCategory !== 'All') params.set('category', selectedCategory);
+    if (sourceFilter !== 'All') params.set('source', sourceFilter);
+
+    if (selectedImageId) {
+      const current = images.find((item) => item.id === selectedImageId);
+      if (current) params.set('image', current.slug);
+    }
+
+    const queryString = params.toString();
+    const nextUrl = queryString
+      ? `${window.location.pathname}?${queryString}`
+      : window.location.pathname;
+    window.history.replaceState(null, '', nextUrl);
+  }, [searchQuery, selectedCategory, sourceFilter, selectedImageId, images]);
 
   const categoryCounts = useMemo(() => getCategoryCounts(images), [images]);
 
