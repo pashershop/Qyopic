@@ -218,33 +218,6 @@ export default function App() {
     navigateTo('/', true);
   };
 
-  const handleNavigateSection = (sectionId: string) => {
-    if (route.type !== 'home') {
-      handleResetFilters();
-      navigateTo('/', false);
-      setTimeout(() => {
-        document
-          .getElementById(sectionId)
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 80);
-      return;
-    }
-
-    if (isFiltering && sectionId !== 'categories') {
-      handleResetFilters();
-      setTimeout(() => {
-        document
-          .getElementById(sectionId)
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 60);
-      return;
-    }
-
-    document
-      .getElementById(sectionId)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   const handleSearchClick = () => {
     if (route.type !== 'home') {
       navigateTo('/', false);
@@ -286,7 +259,6 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-white text-[#0A0A0A]">
       <Header
         onSearchClick={handleSearchClick}
-        onNavigateSection={handleNavigateSection}
         onResetHome={handleResetHome}
       />
 
