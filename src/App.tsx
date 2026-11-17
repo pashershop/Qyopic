@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryBar } from '@/src/components/CategoryBar';
 import { Footer } from '@/src/components/Footer';
 import { Header } from '@/src/components/Header';
 import { Hero } from '@/src/components/Hero';
-import { ImageModal } from '@/src/components/ImageModal';
-import { InfoModal } from '@/src/components/InfoModal';
 import { MasonryGrid } from '@/src/components/MasonryGrid';
+import { StaticPage } from '@/src/components/StaticPage';
+import { StockPage } from '@/src/components/StockPage';
 import {
   downloadImageFile,
   filterImages,
@@ -15,18 +15,36 @@ import {
 import {
   CATEGORIES,
   type Category,
+  type ImageCategory,
   type ImageItem,
   type InfoModalType,
   type SourceFilter,
 } from '@/src/types/image';
 
-function readInitialParams(allImages: ImageItem[]) {
+type PageRoute =
+  | { type: 'home' }
+  | { type: 'stock'; slug: string }
+  | { type: 'static'; page: Exclude<InfoModalType, null> };
+
+function parseRoute(pathname: string): PageRoute {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/about') return { type: 'static', page: 'about' };
+  if (clean === '/contact') return { type: 'static', page: 'contact' };
+  if (clean === '/privacy-policy') return { type: 'static', page: 'privacy' };
+  if (clean === '/terms') return { type: 'static', page: 'terms' };
+  if (clean.startsWith('/stock/')) {
+    const slug = decodeURIComponent(clean.slice('/stock/'.length));
+    if (slug) return { type: 'stock', slug };
+  }
+  return { type: 'home' };
+}
+
+function readInitialFilters() {
   if (typeof window === 'undefined') {
     return {
       query: '',
       category: 'All' as Category,
       source: 'All' as SourceFilter,
-      imageId: null as string | null,
     };
   }
 
@@ -34,7 +52,6 @@ function readInitialParams(allImages: ImageItem[]) {
   const rawQuery = params.get('q') ?? '';
   const rawCategory = params.get('category') ?? 'All';
   const rawSource = params.get('source') ?? 'All';
-  const rawImageSlug = params.get('image');
 
   const validCategory = (CATEGORIES as readonly string[]).includes(rawCategory)
     ? (rawCategory as Category)
@@ -45,55 +62,72 @@ function readInitialParams(allImages: ImageItem[]) {
       ? rawSource
       : 'All';
 
-  const matchedImage = rawImageSlug
-    ? allImages.find(
-        (item) => item.slug === rawImageSlug || item.id === rawImageSlug
-      )
-    : undefined;
-
   return {
     query: rawQuery,
     category: validCategory,
     source: validSource,
-    imageId: matchedImage ? matchedImage.id : null,
   };
 }
 
 export default function App() {
   const [images, setImages] = useState<ImageItem[]>(() => getAllImages());
-  const initialState = useMemo(() => readInitialParams(images), []);
+  const initialFilters = useMemo(() => readInitialFilters(), []);
 
-  const [searchQuery, setSearchQuery] = useState(initialState.query);
+  const [route, setRoute] = useState<PageRoute>(() =>
+    typeof window !== 'undefined'
+      ? parseRoute(window.location.pathname)
+      : { type: 'home' }
+  );
+  const [searchQuery, setSearchQuery] = useState(initialFilters.query);
   const [selectedCategory, setSelectedCategory] = useState<Category>(
-    initialState.category
+    initialFilters.category
   );
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>(
-    initialState.source
+    initialFilters.source
   );
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(
-    initialState.imageId
-  );
-  const [infoModal, setInfoModal] = useState<InfoModalType>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync browser back/forward navigation
   useEffect(() => {
+    const handlePopState = () => {
+      setRoute(parseRoute(window.location.pathname));
+      const updatedFilters = readInitialFilters();
+      setSearchQuery(updatedFilters.query);
+      setSelectedCategory(updatedFilters.category);
+      setSourceFilter(updatedFilters.source);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Sync URL query params when on Home route
+  useEffect(() => {
+    if (route.type !== 'home') return;
+
     const params = new URLSearchParams();
     if (searchQuery.trim()) params.set('q', searchQuery.trim());
     if (selectedCategory !== 'All') params.set('category', selectedCategory);
     if (sourceFilter !== 'All') params.set('source', sourceFilter);
 
-    if (selectedImageId) {
-      const current = images.find((item) => item.id === selectedImageId);
-      if (current) params.set('image', current.slug);
-    }
-
     const queryString = params.toString();
-    const nextUrl = queryString
-      ? `${window.location.pathname}?${queryString}`
-      : window.location.pathname;
-    window.history.replaceState(null, '', nextUrl);
-  }, [searchQuery, selectedCategory, sourceFilter, selectedImageId, images]);
+    const nextUrl = queryString ? `/?${queryString}` : '/';
+    const currentFull = `${window.location.pathname}${window.location.search}`;
+    if (currentFull !== nextUrl) {
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }, [route.type, searchQuery, selectedCategory, sourceFilter]);
+
+  const navigateTo = useCallback((path: string, scrollTop = true) => {
+    if (window.location.pathname + window.location.search !== path) {
+      window.history.pushState(null, '', path);
+    }
+    setRoute(parseRoute(path.split('?')[0]));
+    if (scrollTop) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
 
   const categoryCounts = useMemo(() => getCategoryCounts(images), [images]);
 
@@ -129,12 +163,38 @@ export default function App() {
     [images]
   );
 
-  const selectedImage = useMemo(
-    () => images.find((item) => item.id === selectedImageId) ?? null,
-    [images, selectedImageId]
-  );
+  const activeStockImage = useMemo(() => {
+    if (route.type !== 'stock') return null;
+    return (
+      images.find(
+        (item) => item.slug === route.slug || item.id === route.slug
+      ) ?? null
+    );
+  }, [images, route]);
 
-  const activeGalleryList = isFiltering ? filteredImages : images;
+  // Update browser document title per active page
+  useEffect(() => {
+    if (route.type === 'stock' && activeStockImage) {
+      document.title = `${activeStockImage.title} — Qyopic`;
+    } else if (route.type === 'static') {
+      const pageNames = {
+        about: 'About',
+        contact: 'Contact',
+        privacy: 'Privacy Policy',
+        terms: 'Terms & Conditions',
+      };
+      document.title = `${pageNames[route.page]} — Qyopic`;
+    } else {
+      document.title = 'Qyopic — Discover Beautiful Images';
+    }
+  }, [route, activeStockImage]);
+
+  const handleOpenStock = useCallback(
+    (image: ImageItem) => {
+      navigateTo(`/stock/${image.slug}`, true);
+    },
+    [navigateTo]
+  );
 
   const handleDownloadImage = async (target: ImageItem) => {
     await downloadImageFile(target);
@@ -153,7 +213,23 @@ export default function App() {
     setSourceFilter('All');
   };
 
+  const handleResetHome = () => {
+    handleResetFilters();
+    navigateTo('/', true);
+  };
+
   const handleNavigateSection = (sectionId: string) => {
+    if (route.type !== 'home') {
+      handleResetFilters();
+      navigateTo('/', false);
+      setTimeout(() => {
+        document
+          .getElementById(sectionId)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+      return;
+    }
+
     if (isFiltering && sectionId !== 'categories') {
       handleResetFilters();
       setTimeout(() => {
@@ -170,6 +246,15 @@ export default function App() {
   };
 
   const handleSearchClick = () => {
+    if (route.type !== 'home') {
+      navigateTo('/', false);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        searchInputRef.current?.focus();
+      }, 120);
+      return;
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => {
       searchInputRef.current?.focus();
@@ -183,9 +268,18 @@ export default function App() {
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleResetHome = () => {
-    handleResetFilters();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleSelectCategoryFromStock = (category: ImageCategory) => {
+    setSearchQuery('');
+    setSourceFilter('All');
+    setSelectedCategory(category);
+    navigateTo(`/?category=${encodeURIComponent(category)}`, true);
+  };
+
+  const handleSearchTagFromStock = (tag: string) => {
+    setSelectedCategory('All');
+    setSourceFilter('All');
+    setSearchQuery(tag);
+    navigateTo(`/?q=${encodeURIComponent(tag)}`, true);
   };
 
   return (
@@ -197,177 +291,196 @@ export default function App() {
       />
 
       <main className="flex-1">
-        <Hero
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onSearchSubmit={handleSearchSubmit}
-          searchInputRef={searchInputRef}
-          totalImages={images.length}
-        />
-
-        <CategoryBar
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-          categoryCounts={categoryCounts}
-          sourceFilter={sourceFilter}
-          onSelectSourceFilter={setSourceFilter}
-        />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Active Search & Category Results */}
-          {isFiltering && (
-            <section
-              id="filtered-results"
-              aria-label="Filtered images"
-              className="pt-10 pb-14 border-b border-[#E4E4E7]"
+        {route.type === 'stock' && activeStockImage ? (
+          <StockPage
+            image={activeStockImage}
+            allImages={images}
+            onBackHome={() => navigateTo('/', true)}
+            onOpenStock={handleOpenStock}
+            onDownload={handleDownloadImage}
+            onSelectCategory={handleSelectCategoryFromStock}
+            onSearchTag={handleSearchTagFromStock}
+          />
+        ) : route.type === 'stock' && !activeStockImage ? (
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#0A0A0A]">
+              Image not found
+            </h1>
+            <p className="mt-2 text-sm text-[#52525B]">
+              The requested stock image could not be located in the Qyopic archive.
+            </p>
+            <button
+              type="button"
+              onClick={handleResetHome}
+              className="mt-6 inline-flex items-center justify-center h-10 px-5 rounded-lg bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#27272A] transition-colors cursor-pointer"
             >
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7">
-                <div>
-                  <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]">
-                    {selectedCategory !== 'All'
-                      ? `${selectedCategory} Images`
-                      : 'Search Results'}
-                  </h2>
-                  <p className="mt-1 text-sm text-[#52525B]">
-                    <span className="font-mono tabular-nums font-medium text-[#0A0A0A]">
-                      {filteredImages.length}
-                    </span>{' '}
-                    {filteredImages.length === 1 ? 'image' : 'images'} matched
-                    {searchQuery.trim() ? ` for “${searchQuery.trim()}”` : ''}
-                    {sourceFilter !== 'All' ? ` · ${sourceFilter}` : ''}
-                  </p>
-                </div>
+              Back to Gallery
+            </button>
+          </div>
+        ) : route.type === 'static' ? (
+          <StaticPage
+            page={route.page}
+            onBackHome={() => navigateTo('/', true)}
+          />
+        ) : (
+          <>
+            <Hero
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSearchSubmit={handleSearchSubmit}
+              searchInputRef={searchInputRef}
+              totalImages={images.length}
+            />
 
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="self-start sm:self-auto inline-flex items-center justify-center h-9 px-4 rounded-lg border border-[#E4E4E7] text-xs font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] transition-colors cursor-pointer"
+            <CategoryBar
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              categoryCounts={categoryCounts}
+              sourceFilter={sourceFilter}
+              onSelectSourceFilter={setSourceFilter}
+            />
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Active Search & Category Results */}
+              {isFiltering && (
+                <section
+                  id="filtered-results"
+                  aria-label="Filtered images"
+                  className="pt-10 pb-14 border-b border-[#E4E4E7]"
                 >
-                  Clear Filters
-                </button>
-              </div>
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7">
+                    <div>
+                      <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]">
+                        {selectedCategory !== 'All'
+                          ? `${selectedCategory} Images`
+                          : 'Search Results'}
+                      </h2>
+                      <p className="mt-1 text-sm text-[#52525B]">
+                        <span className="font-mono tabular-nums font-medium text-[#0A0A0A]">
+                          {filteredImages.length}
+                        </span>{' '}
+                        {filteredImages.length === 1 ? 'image' : 'images'} matched
+                        {searchQuery.trim()
+                          ? ` for “${searchQuery.trim()}”`
+                          : ''}
+                        {sourceFilter !== 'All' ? ` · ${sourceFilter}` : ''}
+                      </p>
+                    </div>
 
-              <MasonryGrid
-                images={filteredImages}
-                onSelectImage={(img) => setSelectedImageId(img.id)}
-                onDownloadImage={handleDownloadImage}
-                onResetFilters={handleResetFilters}
-              />
-            </section>
-          )}
-
-          {/* Featured Images Section */}
-          {!isFiltering && (
-            <>
-              <section
-                id="featured"
-                aria-labelledby="featured-heading"
-                className="pt-12 pb-14 border-b border-[#E4E4E7]"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-7">
-                  <div>
-                    <h2
-                      id="featured-heading"
-                      className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]"
+                    <button
+                      type="button"
+                      onClick={handleResetFilters}
+                      className="self-start sm:self-auto inline-flex items-center justify-center h-9 px-4 rounded-lg border border-[#E4E4E7] text-xs font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] transition-colors cursor-pointer"
                     >
-                      Featured Images
-                    </h2>
-                    <p className="mt-1 text-sm text-[#52525B]">
-                      Editorially selected visuals across photography and generative art.
-                    </p>
+                      Clear Filters
+                    </button>
                   </div>
-                  <span className="text-xs font-mono tabular-nums text-[#71717A]">
-                    {featuredImages.length} curated works
-                  </span>
-                </div>
 
-                <MasonryGrid
-                  images={featuredImages}
-                  onSelectImage={(img) => setSelectedImageId(img.id)}
-                  onDownloadImage={handleDownloadImage}
-                />
-              </section>
+                  <MasonryGrid
+                    images={filteredImages}
+                    onOpenStock={handleOpenStock}
+                    onResetFilters={handleResetFilters}
+                  />
+                </section>
+              )}
 
-              {/* Popular Images Section */}
-              <section
-                id="popular"
-                aria-labelledby="popular-heading"
-                className="pt-12 pb-14 border-b border-[#E4E4E7]"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-7">
-                  <div>
-                    <h2
-                      id="popular-heading"
-                      className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]"
-                    >
-                      Popular Images
-                    </h2>
-                    <p className="mt-1 text-sm text-[#52525B]">
-                      Most downloaded visuals by creators and design teams.
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono tabular-nums text-[#71717A]">
-                    Top {popularImages.length} by downloads
-                  </span>
-                </div>
+              {/* Homepage Curated Sections */}
+              {!isFiltering && (
+                <>
+                  <section
+                    id="featured"
+                    aria-labelledby="featured-heading"
+                    className="pt-12 pb-14 border-b border-[#E4E4E7]"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-7">
+                      <div>
+                        <h2
+                          id="featured-heading"
+                          className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]"
+                        >
+                          Featured Images
+                        </h2>
+                        <p className="mt-1 text-sm text-[#52525B]">
+                          Editorially selected visuals across photography and generative art.
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono tabular-nums text-[#71717A]">
+                        {featuredImages.length} curated works
+                      </span>
+                    </div>
 
-                <MasonryGrid
-                  images={popularImages}
-                  onSelectImage={(img) => setSelectedImageId(img.id)}
-                  onDownloadImage={handleDownloadImage}
-                />
-              </section>
+                    <MasonryGrid
+                      images={featuredImages}
+                      onOpenStock={handleOpenStock}
+                    />
+                  </section>
 
-              {/* Latest Images Section */}
-              <section
-                id="latest"
-                aria-labelledby="latest-heading"
-                className="pt-12 pb-6"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-7">
-                  <div>
-                    <h2
-                      id="latest-heading"
-                      className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]"
-                    >
-                      Latest Images
-                    </h2>
-                    <p className="mt-1 text-sm text-[#52525B]">
-                      Fresh additions to the Qyopic archive.
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono tabular-nums text-[#71717A]">
-                    {latestImages.length} recent uploads
-                  </span>
-                </div>
+                  <section
+                    id="popular"
+                    aria-labelledby="popular-heading"
+                    className="pt-12 pb-14 border-b border-[#E4E4E7]"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-7">
+                      <div>
+                        <h2
+                          id="popular-heading"
+                          className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]"
+                        >
+                          Popular Images
+                        </h2>
+                        <p className="mt-1 text-sm text-[#52525B]">
+                          Most downloaded visuals by creators and design teams.
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono tabular-nums text-[#71717A]">
+                        Top {popularImages.length} by downloads
+                      </span>
+                    </div>
 
-                <MasonryGrid
-                  images={latestImages}
-                  onSelectImage={(img) => setSelectedImageId(img.id)}
-                  onDownloadImage={handleDownloadImage}
-                />
-              </section>
-            </>
-          )}
-        </div>
+                    <MasonryGrid
+                      images={popularImages}
+                      onOpenStock={handleOpenStock}
+                    />
+                  </section>
+
+                  <section
+                    id="latest"
+                    aria-labelledby="latest-heading"
+                    className="pt-12 pb-6"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-7">
+                      <div>
+                        <h2
+                          id="latest-heading"
+                          className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]"
+                        >
+                          Latest Images
+                        </h2>
+                        <p className="mt-1 text-sm text-[#52525B]">
+                          Fresh additions to the Qyopic archive.
+                        </p>
+                      </div>
+                      <span className="text-xs font-mono tabular-nums text-[#71717A]">
+                        {latestImages.length} recent uploads
+                      </span>
+                    </div>
+
+                    <MasonryGrid
+                      images={latestImages}
+                      onOpenStock={handleOpenStock}
+                    />
+                  </section>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </main>
 
       <Footer
-        onOpenInfo={(type) => setInfoModal(type)}
+        onNavigatePath={(path) => navigateTo(path, true)}
         onResetHome={handleResetHome}
       />
-
-      <ImageModal
-        image={selectedImage}
-        allImages={activeGalleryList}
-        onClose={() => setSelectedImageId(null)}
-        onSelectImage={(img) => setSelectedImageId(img.id)}
-        onDownload={handleDownloadImage}
-        onSelectCategory={(category) => setSelectedCategory(category)}
-        onSearchTag={(tag) => setSearchQuery(tag)}
-      />
-
-      <InfoModal type={infoModal} onClose={() => setInfoModal(null)} />
     </div>
   );
 }

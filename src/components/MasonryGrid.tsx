@@ -3,15 +3,13 @@ import type { ImageItem } from '@/src/types/image';
 
 interface MasonryGridProps {
   images: ImageItem[];
-  onSelectImage: (image: ImageItem) => void;
-  onDownloadImage: (image: ImageItem) => Promise<void>;
+  onOpenStock: (image: ImageItem) => void;
   onResetFilters?: () => void;
 }
 
 export function MasonryGrid({
   images,
-  onSelectImage,
-  onDownloadImage,
+  onOpenStock,
   onResetFilters,
 }: MasonryGridProps) {
   if (images.length === 0) {
@@ -42,8 +40,7 @@ export function MasonryGrid({
         <ImageCard
           key={image.id}
           image={image}
-          onSelect={onSelectImage}
-          onDownload={onDownloadImage}
+          onOpenStock={onOpenStock}
         />
       ))}
     </div>
