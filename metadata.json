@@ -1,0 +1,6 @@
+{
+  "name": "Qyopic",
+  "description": "Discover Beautiful Images. Explore a curated gallery of AI-generated artwork and licensed stock photography.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
