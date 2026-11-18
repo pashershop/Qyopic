@@ -177,7 +177,7 @@ export function StaticPage({ page, onBackHome }: StaticPageProps) {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your name"
-                      className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-sm text-[#0A0A0A] focus:outline-none focus:border-[#0A0A0A]"
+                      className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-base sm:text-sm text-[#0A0A0A] focus:outline-none focus:border-[#0A0A0A]"
                     />
                   </div>
                   <div>
@@ -194,7 +194,7 @@ export function StaticPage({ page, onBackHome }: StaticPageProps) {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-sm text-[#0A0A0A] focus:outline-none focus:border-[#0A0A0A]"
+                      className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-base sm:text-sm text-[#0A0A0A] focus:outline-none focus:border-[#0A0A0A]"
                     />
                   </div>
                   <div>
@@ -211,7 +211,7 @@ export function StaticPage({ page, onBackHome }: StaticPageProps) {
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="How can we help?"
-                      className="w-full p-3.5 rounded-lg border border-[#D4D4D8] text-sm text-[#0A0A0A] focus:outline-none focus:border-[#0A0A0A]"
+                      className="w-full p-3.5 rounded-lg border border-[#D4D4D8] text-base sm:text-sm text-[#0A0A0A] focus:outline-none focus:border-[#0A0A0A]"
                     />
                   </div>
                   <button

@@ -70,7 +70,7 @@ export function Hero({
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search nature, cars, digital art..."
               aria-label="Search images by keyword, category, or style"
-              className="w-full h-full px-3 bg-transparent text-[15px] sm:text-base text-[#0A0A0A] placeholder:text-[#71717A] focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+              className="w-full h-full px-3 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#71717A] focus:outline-none [&::-webkit-search-cancel-button]:hidden"
             />
 
             {searchQuery && (

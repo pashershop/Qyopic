@@ -7,6 +7,13 @@
 }
 
 @layer base {
+  html,
+  body {
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   html {
     scroll-behavior: smooth;
     font-family: var(--font-sans);

@@ -264,7 +264,7 @@ export function AdminPage({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter admin password"
-                className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-sm text-[#0A0A0A] focus:outline-none focus:border-[#0A0A0A]"
+                className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-base sm:text-sm text-[#0A0A0A] focus:outline-none focus:border-[#0A0A0A]"
               />
             </div>
 
@@ -327,7 +327,7 @@ export function AdminPage({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Alpine Morning Mist"
-                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-sm focus:outline-none focus:border-[#0A0A0A]"
+                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
                 />
               </div>
 
@@ -342,7 +342,7 @@ export function AdminPage({
                   id="upload-category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value as ImageCategory)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] bg-white text-sm focus:outline-none focus:border-[#0A0A0A]"
+                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] bg-white text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
                 >
                   {UPLOAD_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -365,7 +365,7 @@ export function AdminPage({
                   onChange={(e) =>
                     setSourceType(e.target.value as ImageSourceType)
                   }
-                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] bg-white text-sm focus:outline-none focus:border-[#0A0A0A]"
+                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] bg-white text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
                 >
                   <option value="Licensed Stock">Licensed Stock</option>
                   <option value="AI Generated">AI Generated</option>
@@ -385,7 +385,7 @@ export function AdminPage({
                   value={creator}
                   onChange={(e) => setCreator(e.target.value)}
                   placeholder="Qyopic Studio"
-                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-sm focus:outline-none focus:border-[#0A0A0A]"
+                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
                 />
               </div>
             </div>
@@ -403,7 +403,7 @@ export function AdminPage({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Brief editorial description..."
-                className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-sm focus:outline-none focus:border-[#0A0A0A]"
+                className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
               />
             </div>
 
@@ -421,7 +421,7 @@ export function AdminPage({
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   placeholder="minimal, mountain, landscape"
-                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-sm focus:outline-none focus:border-[#0A0A0A]"
+                  className="w-full h-11 px-3.5 rounded-lg border border-[#D4D4D8] text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
                 />
               </div>
 
