@@ -18,37 +18,14 @@ export function Header({ onSearchClick, onResetHome }: HeaderProps) {
           }}
           className="inline-flex items-center gap-2.5 min-h-[40px] font-display text-lg sm:text-xl font-bold tracking-tight text-[#0A0A0A] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0A0A0A] rounded-full"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
+          <img
+            src="/assets/aistudio/frame-ai_21e85880.svg"
+            alt=""
+            width={28}
+            height={28}
             aria-hidden="true"
-            className="text-[#0A0A0A] shrink-0"
-          >
-            <rect
-              x="3"
-              y="3"
-              width="18"
-              height="18"
-              rx="4"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <circle
-              cx="12"
-              cy="12"
-              r="3.5"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path
-              d="M15.5 15.5L18 18"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+            className="w-7 h-7 shrink-0 object-contain"
+          />
           <span>Qyopic</span>
         </a>
 

@@ -114,9 +114,17 @@ export function Footer({ onNavigatePath, onResetHome }: FooterProps) {
                 e.preventDefault();
                 onResetHome();
               }}
-              className="font-display text-lg font-bold tracking-tight text-[#0A0A0A] cursor-pointer"
+              className="inline-flex items-center gap-2.5 font-display text-lg font-bold tracking-tight text-[#0A0A0A] cursor-pointer"
             >
-              Qyopic
+              <img
+                src="/assets/aistudio/frame-ai_21e85880.svg"
+                alt=""
+                width={26}
+                height={26}
+                aria-hidden="true"
+                className="w-6.5 h-6.5 shrink-0 object-contain"
+              />
+              <span>Qyopic</span>
             </a>
             <p className="mt-1 text-sm text-[#71717A]">
               Discover Beautiful Images.
