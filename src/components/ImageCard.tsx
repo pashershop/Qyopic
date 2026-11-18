@@ -1,6 +1,6 @@
 import { Download, ImageOff } from 'lucide-react';
 import { useState, type MouseEvent } from 'react';
-import { resolveImageUrl } from '@/src/config/media';
+import { resolveMediaDisplayUrl } from '@/src/storage/storageManager';
 import type { ImageItem } from '@/src/types/image';
 
 interface ImageCardProps {
@@ -20,7 +20,7 @@ export function ImageCard({ image, onOpenStock }: ImageCardProps) {
   const [loaded, setLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const imageUrl = resolveImageUrl(image.r2Key);
+  const imageUrl = resolveMediaDisplayUrl(image, { width: 900 });
   const aspectClass = ASPECT_CLASS_MAP[image.aspectRatio] || 'aspect-[4/3]';
   const stockHref = `/stock/${image.slug}`;
 

@@ -18,7 +18,9 @@ export type ImageSourceType = 'AI Generated' | 'Licensed Stock';
 
 export type SourceFilter = 'All' | ImageSourceType;
 
-export type AspectRatio = '3:4' | '16:9' | '4:3' | '1:1' | '9:16';
+export type AspectRatio = '3:4' | '16:9' | '4:3' | '1:1' | '9:16' | string;
+
+export type StorageProviderId = 'cloudinary' | 'legacy-r2' | 'local';
 
 export interface ImageItem {
   id: string;
@@ -29,15 +31,24 @@ export interface ImageItem {
   sourceType: ImageSourceType;
   creator: string;
   /**
-   * Relative asset path or Cloudflare R2 object key.
-   * When VITE_R2_PUBLIC_URL is set, resolveImageUrl() automatically prefixes it.
+   * Active storage provider for this asset.
+   * Existing pre-migration items default to 'legacy-r2' / 'local';
+   * new uploads use 'cloudinary'.
    */
-  r2Key: string;
+  storageProvider?: StorageProviderId;
+  /** Cloudinary Public ID (e.g., "qyopic/nature/alpine-peaks") */
+  publicId?: string;
+  /** Primary CDN URL (Cloudinary secure_url or public URL) */
+  url?: string;
+  /** Preserved legacy R2 object key / local asset path during migration */
+  r2Key?: string;
   aspectRatio: AspectRatio;
   width: number;
   height: number;
+  /** Exact file size in bytes (stored for uploaded assets) */
+  sizeBytes?: number;
   fileSize: string;
-  format: 'JPG' | 'PNG' | 'WEBP';
+  format: string;
   publishedAt: string;
   downloads: number;
   featured: boolean;

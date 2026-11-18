@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AdminPage } from '@/src/components/AdminPage';
 import { CategoryBar } from '@/src/components/CategoryBar';
 import { Footer } from '@/src/components/Footer';
 import { Header } from '@/src/components/Header';
@@ -8,6 +9,7 @@ import { StaticPage } from '@/src/components/StaticPage';
 import { StockPage } from '@/src/components/StockPage';
 import {
   downloadImageFile,
+  fetchMergedCatalog,
   filterImages,
   getAllImages,
 } from '@/src/services/imageService';
@@ -22,11 +24,13 @@ import {
 
 type PageRoute =
   | { type: 'home' }
+  | { type: 'admin' }
   | { type: 'stock'; slug: string }
   | { type: 'static'; page: Exclude<InfoModalType, null> };
 
 function parseRoute(pathname: string): PageRoute {
   const clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/admin') return { type: 'admin' };
   if (clean === '/about') return { type: 'static', page: 'about' };
   if (clean === '/contact') return { type: 'static', page: 'contact' };
   if (clean === '/privacy-policy') return { type: 'static', page: 'privacy' };
@@ -101,6 +105,19 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Hydrate merged Cloudinary + Legacy R2 catalog from backend when available
+  useEffect(() => {
+    let active = true;
+    fetchMergedCatalog().then((merged) => {
+      if (active) {
+        setImages(merged);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Sync URL query params when on Home route
   useEffect(() => {
     if (route.type !== 'home') return;
@@ -173,6 +190,8 @@ export default function App() {
   useEffect(() => {
     if (route.type === 'stock' && activeStockImage) {
       document.title = `${activeStockImage.title} — Qyopic`;
+    } else if (route.type === 'admin') {
+      document.title = 'Admin Media Manager — Qyopic';
     } else if (route.type === 'static') {
       const pageNames = {
         about: 'About',
@@ -286,6 +305,17 @@ export default function App() {
               Back to Gallery
             </button>
           </div>
+        ) : route.type === 'admin' ? (
+          <AdminPage
+            images={images}
+            onBackHome={() => navigateTo('/', true)}
+            onImageUploaded={(newImg) =>
+              setImages((prev) => [newImg, ...prev])
+            }
+            onImageDeleted={(deletedId) =>
+              setImages((prev) => prev.filter((item) => item.id !== deletedId))
+            }
+          />
         ) : route.type === 'static' ? (
           <StaticPage
             page={route.page}

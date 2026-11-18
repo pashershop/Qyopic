@@ -11,7 +11,10 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AdContainer } from '@/src/components/AdContainer';
-import { resolveImageUrl } from '@/src/config/media';
+import {
+  resolveMediaDirectUrl,
+  resolveMediaDisplayUrl,
+} from '@/src/storage/storageManager';
 import { getRelatedImages } from '@/src/services/imageService';
 import type { ImageCategory, ImageItem } from '@/src/types/image';
 
@@ -48,7 +51,8 @@ export function StockPage({
     setImgError(false);
   }, [image.id]);
 
-  const imageUrl = resolveImageUrl(image.r2Key);
+  const imageUrl = resolveMediaDisplayUrl(image, { quality: 'original' });
+  const directUrl = resolveMediaDirectUrl(image);
   const relatedImages = getRelatedImages(image, allImages, 4);
   const currentIndex = allImages.findIndex((item) => item.id === image.id);
   const prevImage = currentIndex > 0 ? allImages[currentIndex - 1] : null;
@@ -64,9 +68,9 @@ export function StockPage({
   };
 
   const handleCopyUrl = async () => {
-    const absoluteUrl = imageUrl.startsWith('http')
-      ? imageUrl
-      : `${window.location.origin}${imageUrl}`;
+    const absoluteUrl = directUrl.startsWith('http')
+      ? directUrl
+      : `${window.location.origin}${directUrl}`;
     try {
       await navigator.clipboard.writeText(absoluteUrl);
       setCopiedLink(true);
@@ -434,7 +438,7 @@ export function StockPage({
               >
                 <div className="aspect-[4/3] w-full overflow-hidden bg-[#F4F4F5]">
                   <img
-                    src={resolveImageUrl(rel.r2Key)}
+                    src={resolveMediaDisplayUrl(rel, { width: 600 })}
                     alt={rel.title}
                     loading="lazy"
                     referrerPolicy="no-referrer"

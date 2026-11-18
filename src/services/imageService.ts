@@ -1,25 +1,58 @@
-import rawImages from '@/src/data/images.json';
-import { resolveImageUrl } from '@/src/config/media';
+import rawCloudinaryImages from '@/src/data/cloudinary-catalog.json';
+import rawLegacyImages from '@/src/data/images.json';
+import { resolveMediaOriginalUrl } from '@/src/storage/storageManager';
 import type { Category, ImageItem, SourceFilter } from '@/src/types/image';
 
-const catalog: ImageItem[] = rawImages as ImageItem[];
+const cloudinaryCatalog: ImageItem[] = (rawCloudinaryImages as ImageItem[]).map(
+  (item) => ({
+    ...item,
+    storageProvider: item.storageProvider ?? 'cloudinary',
+  })
+);
+
+const legacyCatalog: ImageItem[] = (rawLegacyImages as ImageItem[]).map(
+  (item) => ({
+    ...item,
+    storageProvider: item.storageProvider ?? 'legacy-r2',
+  })
+);
+
+const bundledCatalog: ImageItem[] = [...cloudinaryCatalog, ...legacyCatalog];
 
 export function getAllImages(): ImageItem[] {
-  return catalog;
+  return bundledCatalog;
+}
+
+export async function fetchMergedCatalog(): Promise<ImageItem[]> {
+  try {
+    const response = await fetch('/api/media', {
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      return bundledCatalog;
+    }
+    const data = (await response.json()) as { images?: ImageItem[] };
+    if (Array.isArray(data.images) && data.images.length > 0) {
+      return data.images;
+    }
+    return bundledCatalog;
+  } catch {
+    return bundledCatalog;
+  }
 }
 
 export function getFeaturedImages(): ImageItem[] {
-  return catalog.filter((item) => item.featured);
+  return bundledCatalog.filter((item) => item.featured);
 }
 
 export function getPopularImages(): ImageItem[] {
-  return [...catalog]
+  return [...bundledCatalog]
     .sort((a, b) => b.downloads - a.downloads)
     .slice(0, 8);
 }
 
 export function getLatestImages(): ImageItem[] {
-  return [...catalog]
+  return [...bundledCatalog]
     .sort(
       (a, b) =>
         new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
@@ -93,12 +126,18 @@ export function getCategoryCounts(images: ImageItem[]): Record<Category, number>
   return counts as Record<Category, number>;
 }
 
+/**
+ * Downloads the image at 100% original quality via the active StorageProvider.
+ * For Cloudinary images, uses fl_attachment without resize/lossy transforms.
+ * For legacy R2/local images, fetches the preserved original asset cleanly.
+ */
 export async function downloadImageFile(item: ImageItem): Promise<void> {
-  const imageUrl = resolveImageUrl(item.r2Key);
-  const fileName = `${item.slug}.${item.format.toLowerCase()}`;
+  const originalUrl = resolveMediaOriginalUrl(item);
+  const ext = (item.format || 'jpg').toLowerCase();
+  const fileName = `${item.slug}.${ext}`;
 
   try {
-    const response = await fetch(imageUrl, { mode: 'cors' });
+    const response = await fetch(originalUrl, { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -112,9 +151,8 @@ export async function downloadImageFile(item: ImageItem): Promise<void> {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
   } catch {
-    // Fallback for cross-origin buckets without CORS download headers
     const link = document.createElement('a');
-    link.href = imageUrl;
+    link.href = originalUrl;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();

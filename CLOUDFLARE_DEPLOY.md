@@ -1,47 +1,29 @@
-# Deploying Qyopic to Cloudflare
+# Deploying Qyopic to Cloudflare Pages
 
-Qyopic is configured as a zero-backend, static SPA ready for **Cloudflare Pages** or **Cloudflare Workers (Static Assets)**, with built-in support for **Cloudflare R2** image delivery.
-
----
-
-## Option 1: Cloudflare Pages (Recommended via Git)
-
-1. Push this repository to GitHub or GitLab.
-2. Open **Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git**.
-3. Use these build settings:
-   - **Framework preset**: `Vite`
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-4. *(Optional)* Add Environment Variable under **Settings → Environment Variables**:
-   - `VITE_R2_PUBLIC_URL` = `https://media.yourdomain.com` (your Cloudflare R2 public custom domain or `r2.dev` URL)
-5. Deploy. `public/_headers` and `public/_redirects` are automatically bundled into `dist/`.
+Qyopic runs natively on **Cloudflare Pages** with **Cloudflare Pages Functions** (`functions/api/[[route]].ts`) for secure Admin-only Cloudinary upload, listing, and deletion.
 
 ---
 
-## Option 2: Direct CLI Deploy (Wrangler)
+## Cloudflare Pages Environment Variables & Secrets
 
-### Cloudflare Pages CLI (`wrangler.jsonc`)
-```bash
-npm install
-npm run build
-npx wrangler pages deploy dist --project-name=qyopic
-```
+In **Cloudflare Dashboard → Workers & Pages → `qyopic` → Settings → Variables and Secrets (Production & Preview)**:
+
+### Secrets (Encrypted / Server-only — used by `functions/api/[[route]].ts`)
+- `CLOUDINARY_CLOUD_NAME` = your Cloudinary Cloud Name
+- `CLOUDINARY_API_KEY` = your Cloudinary API Key
+- `CLOUDINARY_API_SECRET` = your Cloudinary API Secret
+- `CLOUDINARY_UPLOAD_PRESET` = your Cloudinary Upload Preset name (e.g., `qyopic_upload`)
+- `ADMIN_PASSWORD` = strong password for signing into `/admin`
+- `ADMIN_SESSION_SECRET` = long random string for signing admin session cookies
+
+### Plaintext Build Variables (Public)
+- `VITE_CLOUDINARY_CLOUD_NAME` = your Cloudinary Cloud Name (for fast CDN URL formatting)
+- `VITE_R2_PUBLIC_URL` = *(optional)* your legacy R2 bucket public URL during migration
 
 ---
 
-## Connecting Cloudflare R2 for Image Storage
+## Build Settings
+- **Build command**: `npm run build`
+- **Build output directory**: `dist`
 
-1. Create an R2 bucket (e.g., `qyopic-media`) and enable Public Access via a custom domain (e.g., `https://media.qyopic.com`).
-2. Set `VITE_R2_PUBLIC_URL="https://media.qyopic.com"` before running `npm run build`.
-3. Upload your images matching the `r2Key` paths in `src/data/images.json` (or replace `r2Key` values with full `https://...` R2 URLs).
-4. Configure an R2 CORS policy so the direct **Download** button can fetch image blobs cleanly:
-```json
-[
-  {
-    "AllowedOrigins": ["https://qyopic.pages.dev", "https://yourdomain.com"],
-    "AllowedMethods": ["GET", "HEAD"],
-    "AllowedHeaders": ["*"],
-    "MaxAgeSeconds": 86400
-  }
-]
-```
+After adding or updating variables/secrets in Cloudflare Pages, trigger a new deployment (or **Retry deployment**) so the updated build variables and Pages Functions take effect.
