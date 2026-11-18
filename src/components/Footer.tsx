@@ -140,17 +140,34 @@ export function Footer({ onNavigatePath, onResetHome }: FooterProps) {
                 e.preventDefault();
                 onResetHome();
               }}
-              className="inline-flex items-center gap-2.5 font-display text-lg font-bold tracking-tight text-[#0A0A0A] cursor-pointer"
+              className="inline-flex items-center gap-2 font-display text-lg font-bold tracking-tight leading-none text-[#0A0A0A] cursor-pointer"
             >
-              <img
-                src="/assets/aistudio/frame-ai_21e85880.svg"
-                alt=""
-                width={26}
-                height={26}
+              <svg
+                width="20"
+                height="20"
+                viewBox="3.75 3.75 16.5 16.5"
+                fill="none"
                 aria-hidden="true"
-                className="w-6.5 h-6.5 shrink-0 object-contain"
-              />
-              <span>Qyopic</span>
+                className="w-5 h-5 shrink-0"
+              >
+                <rect
+                  x="4.6875"
+                  y="4.6875"
+                  width="14.625"
+                  height="14.625"
+                  rx="2.8125"
+                  stroke="#0A0A0A"
+                  strokeWidth="1.5"
+                />
+                <circle cx="8.8" cy="8.8" r="1.25" fill="#0A0A0A" />
+                <rect x="13.95" y="7.55" width="2.5" height="2.5" rx="0.5" fill="#0A0A0A" />
+                <rect x="10.75" y="10.75" width="2.5" height="2.5" rx="0.5" fill="#0A0A0A" />
+                <rect x="13.95" y="10.75" width="2.5" height="2.5" rx="0.5" fill="#0A0A0A" />
+                <rect x="7.55" y="13.95" width="2.5" height="2.5" rx="0.5" fill="#0A0A0A" />
+                <rect x="10.75" y="13.95" width="2.5" height="2.5" rx="0.5" fill="#0A0A0A" />
+                <rect x="13.95" y="13.95" width="2.5" height="2.5" rx="0.5" fill="#0A0A0A" />
+              </svg>
+              <span className="leading-none">Qyopic</span>
             </a>
             <p className="mt-1 text-sm text-[#71717A]">
               Discover Beautiful Images.

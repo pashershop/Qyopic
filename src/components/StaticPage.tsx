@@ -55,18 +55,22 @@ export function StaticPage({ page, onBackHome }: StaticPageProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14">
-      <div className="pb-6 border-b border-[#E4E4E7]">
-        <button
-          type="button"
-          onClick={onBackHome}
-          className="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg border border-[#E4E4E7] bg-white text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          <span>Back to Gallery</span>
-        </button>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-[66px] sm:pt-[74px] pb-8 sm:pb-12">
+      <div className="fixed top-[74px] sm:top-[82px] left-0 right-0 z-20 pointer-events-none px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <button
+            type="button"
+            onClick={onBackHome}
+            className="pointer-events-auto inline-flex items-center gap-2 h-10 px-4 rounded-full border border-[#E4E4E7] bg-white/95 backdrop-blur-sm text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] transition-colors cursor-pointer shadow-none"
+          >
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span>Back to Gallery</span>
+          </button>
+        </div>
+      </div>
 
-        <h1 className="mt-6 font-display text-3xl sm:text-4xl font-bold tracking-tight text-[#0A0A0A]">
+      <div className="pb-6 border-b border-[#E4E4E7]">
+        <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-[#0A0A0A]">
           {PAGE_TITLES[page]}
         </h1>
         <p className="mt-2 text-base text-[#52525B]">{PAGE_SUBTITLES[page]}</p>

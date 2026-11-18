@@ -204,28 +204,32 @@ export function AdminPage({
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      <div className="flex items-center justify-between gap-4 pb-6 border-b border-[#E4E4E7]">
-        <button
-          type="button"
-          onClick={onBackHome}
-          className="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg border border-[#E4E4E7] bg-white text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          <span>Back to Gallery</span>
-        </button>
-
-        {session?.authenticated && (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-[64px] sm:pt-[72px] pb-8 sm:pb-12">
+      <div className="fixed top-[74px] sm:top-[82px] left-0 right-0 z-20 pointer-events-none px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <button
             type="button"
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 h-10 px-3.5 rounded-lg border border-[#E4E4E7] bg-white text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] transition-colors cursor-pointer"
+            onClick={onBackHome}
+            className="pointer-events-auto inline-flex items-center gap-2 h-10 px-4 rounded-full border border-[#E4E4E7] bg-white/95 backdrop-blur-sm text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] transition-colors cursor-pointer shadow-none"
           >
-            <LogOut className="w-4 h-4" aria-hidden="true" />
-            <span>Sign Out</span>
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span>Back to Gallery</span>
           </button>
-        )}
+
+          {session?.authenticated && (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="pointer-events-auto inline-flex items-center gap-2 h-10 px-4 rounded-full border border-[#E4E4E7] bg-white/95 backdrop-blur-sm text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] transition-colors cursor-pointer shadow-none"
+            >
+              <LogOut className="w-4 h-4" aria-hidden="true" />
+              <span>Sign Out</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      <div className="border-b border-[#E4E4E7]" />
 
       {!session ? (
         <div className="py-16 text-center text-sm text-[#71717A]">

@@ -115,55 +115,36 @@ export function StockPage({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-9">
-      {/* Top Action Bar (Mobile Touch-Friendly 44px Controls) */}
-      <div className="flex items-center justify-between gap-3 pb-4 sm:pb-5 border-b border-[#E4E4E7]">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={onBackHome}
-            className="inline-flex items-center gap-2 h-11 px-3.5 rounded-lg border border-[#E4E4E7] bg-white text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] transition-colors shrink-0 cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-            <span>Back</span>
-          </button>
-
-          <div className="hidden md:flex items-center gap-2 text-sm text-[#71717A] min-w-0">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[64px] sm:pt-[72px] pb-6 sm:pb-10">
+      {/* Fixed Floating Top Action Bar (Never Pushed Under Header) */}
+      <div className="fixed top-[74px] sm:top-[82px] left-0 right-0 z-20 pointer-events-none px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
-              onClick={() => onSelectCategory(image.category)}
-              className="text-[#0A0A0A] font-medium hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
+              onClick={onBackHome}
+              className="pointer-events-auto inline-flex items-center gap-2 h-10 sm:h-11 px-4 rounded-full border border-[#E4E4E7] bg-white/95 backdrop-blur-sm text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] transition-colors shrink-0 cursor-pointer shadow-none"
             >
-              {image.category}
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+              <span>Back</span>
             </button>
-            <span aria-hidden="true">/</span>
-            <span className="truncate">{image.title}</span>
+
+            <div className="pointer-events-auto hidden md:inline-flex items-center gap-2 h-10 px-4 rounded-full border border-[#E4E4E7] bg-white/95 backdrop-blur-sm text-sm text-[#71717A] min-w-0 max-w-md shadow-none">
+              <button
+                type="button"
+                onClick={() => onSelectCategory(image.category)}
+                className="text-[#0A0A0A] font-medium hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
+              >
+                {image.category}
+              </button>
+              <span aria-hidden="true">/</span>
+              <span className="truncate">{image.title}</span>
+            </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            disabled={!prevImage}
-            onClick={() => prevImage && onOpenStock(prevImage)}
-            aria-label="Previous image"
-            className="inline-flex items-center justify-center gap-1.5 min-w-[44px] h-11 px-3 rounded-lg border border-[#E4E4E7] text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] disabled:opacity-35 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Previous</span>
-          </button>
-          <button
-            type="button"
-            disabled={!nextImage}
-            onClick={() => nextImage && onOpenStock(nextImage)}
-            aria-label="Next image"
-            className="inline-flex items-center justify-center gap-1.5 min-w-[44px] h-11 px-3 rounded-lg border border-[#E4E4E7] text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] disabled:opacity-35 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <span className="hidden sm:inline">Next</span>
-            <ChevronRight className="w-4 h-4" aria-hidden="true" />
-          </button>
-        </div>
       </div>
+
+      <div className="border-b border-[#E4E4E7]" />
 
       {/* Top Leaderboard Ad Slot */}
       <div className="mt-5">
@@ -172,26 +153,50 @@ export function StockPage({
 
       {/* Main Stock Showcase & Download Panel */}
       <div className="mt-5 sm:mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-        {/* Left: High-Resolution Artwork Stage */}
+        {/* Left: High-Resolution Artwork Stage with Side Previous/Next Buttons */}
         <div className="lg:col-span-7 xl:col-span-8 rounded-2xl border border-[#E4E4E7] overflow-hidden bg-[#FAFAFA]">
-          <div className="p-3 sm:p-8 flex items-center justify-center min-h-[280px] sm:min-h-[500px]">
-            {!imgError ? (
-              <img
-                src={imageUrl}
-                alt={image.title}
-                referrerPolicy="no-referrer"
-                onError={() => setImgError(true)}
-                className="max-h-[68vh] sm:max-h-[74vh] w-auto max-w-full rounded-xl object-contain"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center text-center py-12 text-[#71717A]">
-                <ImageOff className="w-8 h-8 mb-3" aria-hidden="true" />
-                <p className="text-sm font-medium text-[#0A0A0A]">
-                  {image.title}
-                </p>
-                <p className="text-xs mt-1">{image.category}</p>
-              </div>
-            )}
+          <div className="p-2 sm:p-5 flex items-center justify-between gap-2 sm:gap-4 min-h-[280px] sm:min-h-[500px]">
+            <button
+              type="button"
+              disabled={!prevImage}
+              onClick={() => prevImage && onOpenStock(prevImage)}
+              aria-label="Previous image"
+              title="Previous image"
+              className="inline-flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full border border-[#E4E4E7] bg-white text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] disabled:opacity-30 disabled:pointer-events-none transition-colors shrink-0 cursor-pointer shadow-none"
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+            </button>
+
+            <div className="flex-1 min-w-0 flex items-center justify-center">
+              {!imgError ? (
+                <img
+                  src={imageUrl}
+                  alt={image.title}
+                  referrerPolicy="no-referrer"
+                  onError={() => setImgError(true)}
+                  className="max-h-[68vh] sm:max-h-[74vh] w-auto max-w-full rounded-xl object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center py-12 text-[#71717A]">
+                  <ImageOff className="w-8 h-8 mb-3" aria-hidden="true" />
+                  <p className="text-sm font-medium text-[#0A0A0A]">
+                    {image.title}
+                  </p>
+                  <p className="text-xs mt-1">{image.category}</p>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              disabled={!nextImage}
+              onClick={() => nextImage && onOpenStock(nextImage)}
+              aria-label="Next image"
+              title="Next image"
+              className="inline-flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full border border-[#E4E4E7] bg-white text-[#0A0A0A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] disabled:opacity-30 disabled:pointer-events-none transition-colors shrink-0 cursor-pointer shadow-none"
+            >
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+            </button>
           </div>
 
           {/* Crisp Stage Meta Bar */}
