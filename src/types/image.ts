@@ -8,6 +8,14 @@ export const CATEGORIES = [
   'Abstract',
   'Cars',
   'Digital Art',
+  '3D Renders',
+  'Anime',
+  'Cyberpunk',
+  'Minimalist',
+  'Space',
+  'Aesthetic',
+  'Portraits',
+  'Gaming',
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];

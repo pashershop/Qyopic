@@ -104,9 +104,34 @@ export function StaticPage({ page, onBackHome }: StaticPageProps) {
                   Edge Delivery
                 </h2>
                 <p className="mt-1.5 text-sm text-[#52525B]">
-                  Structured JSON catalog ready for global image delivery via Cloudflare R2.
+                  Fast global image delivery powered by Cloudinary CDN and Cloudflare edge routing.
                 </p>
               </div>
+            </div>
+
+            <div className="p-5 sm:p-6 rounded-xl border border-[#E4E4E7] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-[#71717A]">
+                  Creator &amp; Developer
+                </p>
+                <h2 className="mt-1 font-display text-lg font-semibold text-[#0A0A0A]">
+                  MD Robin Mia
+                </h2>
+                <p className="mt-0.5 text-sm text-[#52525B]">
+                  Founder &amp; creator of Qyopic
+                </p>
+              </div>
+              <a
+                href="https://www.facebook.com/mdrobinmia0"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-sm font-medium text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white hover:border-[#0A0A0A] transition-colors shrink-0"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M13.5 21v-8.2h2.75l.41-3.2H13.5V7.56c0-.93.26-1.56 1.59-1.56h1.7V3.14c-.3-.04-1.31-.14-2.49-.14-2.46 0-4.15 1.5-4.15 4.26V9.6H7.35v3.2h2.8V21h3.35z" />
+                </svg>
+                <span>facebook.com/mdrobinmia0</span>
+              </a>
             </div>
           </>
         )}

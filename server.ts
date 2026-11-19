@@ -54,7 +54,19 @@ const VALID_CATEGORIES = new Set([
   'Abstract',
   'Cars',
   'Digital Art',
+  '3D Renders',
+  'Anime',
+  'Cyberpunk',
+  'Minimalist',
+  'Space',
+  'Aesthetic',
+  'Portraits',
+  'Gaming',
 ]);
+
+function cleanContextValue(value: string): string {
+  return value.replace(/[|=]/g, ' ').trim();
+}
 
 function getSessionSecret(): string {
   const secret =
@@ -441,6 +453,142 @@ async function startServer() {
           error instanceof Error ? error.message : 'Unexpected upload failure.',
       });
     }
+  });
+
+  // Admin-only Edit / Update metadata API (Protects legacy R2 items during migration)
+  app.patch('/api/media/:id', requireAdmin, async (req, res) => {
+    const targetId = req.params.id;
+    const legacyItems = await readJsonArray(LEGACY_CATALOG_PATH);
+    if (legacyItems.some((item) => item.id === targetId)) {
+      res.status(403).json({
+        error:
+          'Legacy R2 images are protected during migration and cannot be edited.',
+      });
+      return;
+    }
+
+    const cloudinaryItems = await readJsonArray(CLOUDINARY_CATALOG_PATH);
+    const index = cloudinaryItems.findIndex((item) => item.id === targetId);
+    if (index === -1) {
+      res.status(404).json({ error: 'Image not found.' });
+      return;
+    }
+
+    const existing = cloudinaryItems[index];
+    const {
+      title,
+      category,
+      sourceType,
+      creator,
+      description,
+      tags,
+      featured,
+      popular,
+      latest,
+    } = req.body ?? {};
+
+    const cleanTitle =
+      typeof title === 'string' && title.trim() ? title.trim() : existing.title;
+    const cleanCategory =
+      typeof category === 'string' && VALID_CATEGORIES.has(category)
+        ? category
+        : existing.category;
+    const cleanSourceType: 'AI Generated' | 'Licensed Stock' =
+      sourceType === 'AI Generated' || sourceType === 'Licensed Stock'
+        ? sourceType
+        : existing.sourceType;
+    const cleanCreator =
+      typeof creator === 'string' && creator.trim()
+        ? creator.trim()
+        : existing.creator;
+    const cleanDescription =
+      typeof description === 'string' && description.trim()
+        ? description.trim()
+        : existing.description;
+
+    const cleanTags = Array.isArray(tags)
+      ? tags
+          .map((t) => String(t).trim().toLowerCase())
+          .filter(Boolean)
+          .slice(0, 10)
+      : typeof tags === 'string'
+        ? tags
+            .split(',')
+            .map((t) => t.trim().toLowerCase())
+            .filter(Boolean)
+            .slice(0, 10)
+        : existing.tags;
+
+    const updatedRecord: StoredImageRecord = {
+      ...existing,
+      title: cleanTitle,
+      category: cleanCategory,
+      sourceType: cleanSourceType,
+      creator: cleanCreator,
+      description: cleanDescription,
+      tags: cleanTags.length > 0 ? cleanTags : [cleanCategory.toLowerCase()],
+      featured: typeof featured === 'boolean' ? featured : existing.featured,
+      popular: typeof popular === 'boolean' ? popular : existing.popular,
+      latest: typeof latest === 'boolean' ? latest : existing.latest,
+    };
+
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+    const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+    const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+
+    if (cloudName && apiKey && apiSecret && existing.publicId) {
+      try {
+        const timestamp = Math.floor(Date.now() / 1000);
+        const contextStr = [
+          `title=${cleanContextValue(updatedRecord.title)}`,
+          `category=${cleanContextValue(updatedRecord.category)}`,
+          `source_type=${cleanContextValue(updatedRecord.sourceType)}`,
+          `creator=${cleanContextValue(updatedRecord.creator)}`,
+          `description=${cleanContextValue(updatedRecord.description)}`,
+          `slug=${cleanContextValue(updatedRecord.slug)}`,
+          `featured=${String(updatedRecord.featured)}`,
+          `popular=${String(updatedRecord.popular)}`,
+          `latest=${String(updatedRecord.latest)}`,
+        ].join('|');
+        const tagsStr = updatedRecord.tags.join(',');
+
+        const signature = signCloudinaryParams(
+          {
+            context: contextStr,
+            public_id: existing.publicId,
+            tags: tagsStr,
+            timestamp,
+            type: 'upload',
+          },
+          apiSecret
+        );
+
+        const explicitForm = new FormData();
+        explicitForm.append('public_id', existing.publicId);
+        explicitForm.append('type', 'upload');
+        explicitForm.append('context', contextStr);
+        explicitForm.append('tags', tagsStr);
+        explicitForm.append('api_key', apiKey);
+        explicitForm.append('timestamp', String(timestamp));
+        explicitForm.append('signature', signature);
+
+        await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/explicit`,
+          {
+            method: 'POST',
+            body: explicitForm,
+          }
+        );
+      } catch {
+        // Proceed with local catalog update if remote explicit sync fails transiently
+      }
+    }
+
+    const nextItems = [...cloudinaryItems];
+    nextItems[index] = updatedRecord;
+    await writeCloudinaryCatalog(nextItems);
+
+    res.json({ image: updatedRecord });
   });
 
   // Admin-only Delete API (Protects legacy R2 items during migration)

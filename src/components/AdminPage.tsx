@@ -1,10 +1,13 @@
 import {
   ArrowLeft,
+  Check,
   Lock,
   LogOut,
+  Pencil,
   ShieldCheck,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { resolveMediaDisplayUrl } from '@/src/storage/storageManager';
@@ -19,6 +22,7 @@ interface AdminPageProps {
   images: ImageItem[];
   onBackHome: () => void;
   onImageUploaded: (image: ImageItem) => void;
+  onImageUpdated: (image: ImageItem) => void;
   onImageDeleted: (id: string) => void;
 }
 
@@ -37,6 +41,7 @@ export function AdminPage({
   images,
   onBackHome,
   onImageUploaded,
+  onImageUpdated,
   onImageDeleted,
 }: AdminPageProps) {
   const [session, setSession] = useState<SessionStatus | null>(null);
@@ -56,6 +61,21 @@ export function AdminPage({
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const [uploadError, setUploadError] = useState('');
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState<ImageCategory>('Nature');
+  const [editSourceType, setEditSourceType] =
+    useState<ImageSourceType>('Licensed Stock');
+  const [editCreator, setEditCreator] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editTags, setEditTags] = useState('');
+  const [editFeatured, setEditFeatured] = useState(true);
+  const [editPopular, setEditPopular] = useState(false);
+  const [editLatest, setEditLatest] = useState(true);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchSession = async () => {
@@ -183,6 +203,67 @@ export function AdminPage({
     }
   };
 
+  const startEdit = (item: ImageItem) => {
+    setConfirmDeleteId(null);
+    setUploadError('');
+    setUploadStatus('');
+    setEditingId(item.id);
+    setEditTitle(item.title);
+    setEditCategory(item.category);
+    setEditSourceType(item.sourceType);
+    setEditCreator(item.creator);
+    setEditDescription(item.description);
+    setEditTags(item.tags.join(', '));
+    setEditFeatured(item.featured);
+    setEditPopular(item.popular);
+    setEditLatest(item.latest);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const handleSaveEdit = async (e: FormEvent, item: ImageItem) => {
+    e.preventDefault();
+    setSavingEdit(true);
+    setUploadError('');
+    setUploadStatus('');
+
+    try {
+      const res = await fetch(`/api/media/${encodeURIComponent(item.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editTitle,
+          category: editCategory,
+          sourceType: editSourceType,
+          creator: editCreator,
+          description: editDescription,
+          tags: editTags,
+          slug: item.slug,
+          featured: editFeatured,
+          popular: editPopular,
+          latest: editLatest,
+        }),
+      });
+      const data = (await res.json()) as {
+        image?: ImageItem;
+        error?: string;
+      };
+      if (!res.ok || !data.image) {
+        setUploadError(data.error || 'Update failed.');
+      } else {
+        onImageUpdated(data.image);
+        setEditingId(null);
+        setUploadStatus(`Updated "${data.image.title}".`);
+      }
+    } catch {
+      setUploadError('Update request failed.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const handleDelete = async (item: ImageItem) => {
     setDeletingId(item.id);
     setUploadError('');
@@ -194,6 +275,10 @@ export function AdminPage({
       if (!res.ok || !data.deleted) {
         setUploadError(data.error || 'Delete failed.');
       } else {
+        setConfirmDeleteId(null);
+        if (editingId === item.id) {
+          setEditingId(null);
+        }
         onImageDeleted(item.id);
       }
     } catch {
@@ -484,55 +569,292 @@ export function AdminPage({
             <div className="divide-y divide-[#E4E4E7]">
               {images.map((item) => {
                 const isCloudinary = item.storageProvider === 'cloudinary';
+                const isEditing = editingId === item.id;
+                const isConfirmingDelete = confirmDeleteId === item.id;
+
                 return (
-                  <div
-                    key={item.id}
-                    className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <img
-                        src={resolveMediaDisplayUrl(item, { width: 160 })}
-                        alt={item.title}
-                        className="w-14 h-14 rounded-lg object-cover bg-[#F4F4F5] shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#0A0A0A] truncate">
-                          {item.title}
-                        </p>
-                        <p className="text-xs text-[#52525B] mt-0.5 truncate">
-                          {item.category} · {item.format} · {item.fileSize} ·{' '}
-                          <span className="font-mono tabular-nums">
-                            {item.width}×{item.height}
-                          </span>
-                        </p>
-                        {item.publicId && (
-                          <p className="text-[11px] font-mono text-[#71717A] mt-0.5 truncate">
-                            Public ID: {item.publicId}
+                  <div key={item.id} className="p-4 sm:px-6 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <img
+                          src={resolveMediaDisplayUrl(item, { width: 160 })}
+                          alt={item.title}
+                          className="w-14 h-14 rounded-lg object-cover bg-[#F4F4F5] shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#0A0A0A] truncate">
+                            {item.title}
                           </p>
+                          <p className="text-xs text-[#52525B] mt-0.5 truncate">
+                            {item.category} · {item.format} · {item.fileSize} ·{' '}
+                            <span className="font-mono tabular-nums">
+                              {item.width}×{item.height}
+                            </span>
+                          </p>
+                          {item.publicId && (
+                            <p className="text-[11px] font-mono text-[#71717A] mt-0.5 truncate">
+                              Public ID: {item.publicId}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+                        <span className="text-xs text-[#71717A] font-mono">
+                          {isCloudinary ? 'Cloudinary' : 'Legacy R2 (Protected)'}
+                        </span>
+
+                        {isCloudinary && !isConfirmingDelete && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                isEditing ? cancelEdit() : startEdit(item)
+                              }
+                              aria-label={`Edit ${item.title}`}
+                              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[#E4E4E7] bg-white text-xs font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] transition-colors cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                              <span>{isEditing ? 'Close' : 'Edit'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={deletingId === item.id}
+                              onClick={() => {
+                                setEditingId(null);
+                                setConfirmDeleteId(item.id);
+                              }}
+                              aria-label={`Delete ${item.title}`}
+                              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[#E4E4E7] text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                              <span>Delete</span>
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs text-[#71717A] font-mono">
-                        {isCloudinary ? 'Cloudinary' : 'Legacy R2 (Protected)'}
-                      </span>
+                    {/* Delete Permission Confirmation Prompt */}
+                    {isCloudinary && isConfirmingDelete && (
+                      <div className="p-3.5 rounded-xl border border-red-200 bg-red-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <p className="text-xs sm:text-sm font-medium text-red-900">
+                          Confirm delete? &ldquo;{item.title}&rdquo; will be permanently removed from Cloudinary.
+                        </p>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            disabled={deletingId === item.id}
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-[#D4D4D8] bg-white text-xs font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] transition-colors cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Cancel</span>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletingId === item.id}
+                            onClick={() => handleDelete(item)}
+                            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-red-700 text-white text-xs font-medium hover:bg-red-800 disabled:opacity-50 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>
+                              {deletingId === item.id
+                                ? 'Deleting...'
+                                : 'Yes, Delete'}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
-                      {isCloudinary && (
-                        <button
-                          type="button"
-                          disabled={deletingId === item.id}
-                          onClick={() => handleDelete(item)}
-                          aria-label={`Delete ${item.title}`}
-                          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[#E4E4E7] text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                          <span>
-                            {deletingId === item.id ? 'Deleting...' : 'Delete'}
-                          </span>
-                        </button>
-                      )}
-                    </div>
+                    {/* Inline Edit Panel */}
+                    {isCloudinary && isEditing && (
+                      <form
+                        onSubmit={(e) => handleSaveEdit(e, item)}
+                        className="p-4 sm:p-5 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] space-y-4"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-display text-sm font-semibold text-[#0A0A0A]">
+                            Edit Image Details
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="text-xs text-[#52525B] hover:text-[#0A0A0A] cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div>
+                            <label
+                              htmlFor={`edit-title-${item.id}`}
+                              className="block text-xs font-medium text-[#0A0A0A] mb-1"
+                            >
+                              Title
+                            </label>
+                            <input
+                              id={`edit-title-${item.id}`}
+                              type="text"
+                              required
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              className="w-full h-10 px-3 rounded-lg border border-[#D4D4D8] bg-white text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
+                            />
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor={`edit-category-${item.id}`}
+                              className="block text-xs font-medium text-[#0A0A0A] mb-1"
+                            >
+                              Category
+                            </label>
+                            <select
+                              id={`edit-category-${item.id}`}
+                              value={editCategory}
+                              onChange={(e) =>
+                                setEditCategory(e.target.value as ImageCategory)
+                              }
+                              className="w-full h-10 px-3 rounded-lg border border-[#D4D4D8] bg-white text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
+                            >
+                              {UPLOAD_CATEGORIES.map((cat) => (
+                                <option key={cat} value={cat}>
+                                  {cat}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor={`edit-source-${item.id}`}
+                              className="block text-xs font-medium text-[#0A0A0A] mb-1"
+                            >
+                              Source Type
+                            </label>
+                            <select
+                              id={`edit-source-${item.id}`}
+                              value={editSourceType}
+                              onChange={(e) =>
+                                setEditSourceType(
+                                  e.target.value as ImageSourceType
+                                )
+                              }
+                              className="w-full h-10 px-3 rounded-lg border border-[#D4D4D8] bg-white text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
+                            >
+                              <option value="Licensed Stock">
+                                Licensed Stock
+                              </option>
+                              <option value="AI Generated">AI Generated</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor={`edit-creator-${item.id}`}
+                              className="block text-xs font-medium text-[#0A0A0A] mb-1"
+                            >
+                              Creator
+                            </label>
+                            <input
+                              id={`edit-creator-${item.id}`}
+                              type="text"
+                              value={editCreator}
+                              onChange={(e) => setEditCreator(e.target.value)}
+                              className="w-full h-10 px-3 rounded-lg border border-[#D4D4D8] bg-white text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor={`edit-desc-${item.id}`}
+                            className="block text-xs font-medium text-[#0A0A0A] mb-1"
+                          >
+                            Description
+                          </label>
+                          <input
+                            id={`edit-desc-${item.id}`}
+                            type="text"
+                            value={editDescription}
+                            onChange={(e) => setEditDescription(e.target.value)}
+                            className="w-full h-10 px-3 rounded-lg border border-[#D4D4D8] bg-white text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor={`edit-tags-${item.id}`}
+                            className="block text-xs font-medium text-[#0A0A0A] mb-1"
+                          >
+                            Tags (comma separated)
+                          </label>
+                          <input
+                            id={`edit-tags-${item.id}`}
+                            type="text"
+                            value={editTags}
+                            onChange={(e) => setEditTags(e.target.value)}
+                            className="w-full h-10 px-3 rounded-lg border border-[#D4D4D8] bg-white text-base sm:text-sm focus:outline-none focus:border-[#0A0A0A]"
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-[#0A0A0A]">
+                          <label className="inline-flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editFeatured}
+                              onChange={(e) =>
+                                setEditFeatured(e.target.checked)
+                              }
+                              className="w-4 h-4 accent-[#0A0A0A]"
+                            />
+                            <span>Featured</span>
+                          </label>
+                          <label className="inline-flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editPopular}
+                              onChange={(e) => setEditPopular(e.target.checked)}
+                              className="w-4 h-4 accent-[#0A0A0A]"
+                            />
+                            <span>Popular</span>
+                          </label>
+                          <label className="inline-flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editLatest}
+                              onChange={(e) => setEditLatest(e.target.checked)}
+                              className="w-4 h-4 accent-[#0A0A0A]"
+                            />
+                            <span>Latest</span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 pt-1">
+                          <button
+                            type="submit"
+                            disabled={savingEdit}
+                            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[#0A0A0A] text-white text-xs sm:text-sm font-medium hover:bg-[#27272A] disabled:opacity-50 transition-colors cursor-pointer"
+                          >
+                            <Check className="w-4 h-4" aria-hidden="true" />
+                            <span>
+                              {savingEdit ? 'Saving...' : 'Save Changes'}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg border border-[#D4D4D8] bg-white text-xs sm:text-sm font-medium text-[#0A0A0A] hover:bg-[#F4F4F5] transition-colors cursor-pointer"
+                          >
+                            <span>Cancel</span>
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </div>
                 );
               })}

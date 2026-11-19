@@ -68,6 +68,14 @@ const VALID_CATEGORIES = new Set([
   'Abstract',
   'Cars',
   'Digital Art',
+  '3D Renders',
+  'Anime',
+  'Cyberpunk',
+  'Minimalist',
+  'Space',
+  'Aesthetic',
+  'Portraits',
+  'Gaming',
 ]);
 
 function jsonResponse(data: unknown, status = 200, headers?: HeadersInit): Response {
@@ -282,9 +290,9 @@ function mapCloudinaryResourceToItem(res: CloudinaryResource): StoredImageRecord
     format,
     publishedAt: (res.created_at || new Date().toISOString()).slice(0, 10),
     downloads: 0,
-    featured: true,
-    popular: false,
-    latest: true,
+    featured: custom.featured !== 'false',
+    popular: custom.popular === 'true',
+    latest: custom.latest !== 'false',
     tags:
       Array.isArray(res.tags) && res.tags.length > 0
         ? res.tags
@@ -591,6 +599,184 @@ export async function onRequest(context: CfEventContext): Promise<Response> {
     });
 
     return jsonResponse({ image: item }, 201);
+  }
+
+  // PATCH /api/media/:id (Admin only - update metadata & tags in Cloudinary)
+  if (method === 'PATCH' && path.startsWith('/media/')) {
+    const cookies = parseCookies(request.headers.get('Cookie'));
+    const authenticated = await verifySessionToken(
+      env,
+      cookies[SESSION_COOKIE_NAME]
+    );
+    if (!authenticated) {
+      return jsonResponse(
+        { error: 'Admin authentication required to edit images.' },
+        401
+      );
+    }
+
+    const targetId = decodeURIComponent(path.slice('/media/'.length));
+    const legacyItems = legacyImagesJson as Array<{ id: string }>;
+    if (legacyItems.some((item) => item.id === targetId)) {
+      return jsonResponse(
+        {
+          error:
+            'Legacy R2 images are protected during migration and cannot be edited.',
+        },
+        403
+      );
+    }
+
+    if (!targetId.startsWith('cl_')) {
+      return jsonResponse({ error: 'Invalid Cloudinary asset ID.' }, 400);
+    }
+
+    let publicId = '';
+    try {
+      publicId = decodeBase64Url(targetId.slice(3));
+    } catch {
+      return jsonResponse({ error: 'Malformed asset identifier.' }, 400);
+    }
+
+    const cloudName = env.CLOUDINARY_CLOUD_NAME?.trim();
+    const apiKey = env.CLOUDINARY_API_KEY?.trim();
+    const apiSecret = env.CLOUDINARY_API_SECRET?.trim();
+    if (!cloudName || !apiKey || !apiSecret) {
+      return jsonResponse(
+        { error: 'Cloudinary API credentials are not configured.' },
+        503
+      );
+    }
+
+    const body = (await request.json().catch(() => ({}))) as {
+      title?: string;
+      category?: string;
+      description?: string;
+      sourceType?: string;
+      creator?: string;
+      tags?: string | string[];
+      slug?: string;
+      featured?: boolean;
+      popular?: boolean;
+      latest?: boolean;
+    };
+
+    const cleanTitle = typeof body.title === 'string' ? body.title.trim() : '';
+    if (!cleanTitle) {
+      return jsonResponse({ error: 'Image title is required.' }, 400);
+    }
+
+    const cleanCategory =
+      typeof body.category === 'string' && VALID_CATEGORIES.has(body.category)
+        ? body.category
+        : 'Nature';
+    const cleanSourceType: 'AI Generated' | 'Licensed Stock' =
+      body.sourceType === 'AI Generated' ? 'AI Generated' : 'Licensed Stock';
+    const cleanCreator =
+      typeof body.creator === 'string' && body.creator.trim()
+        ? body.creator.trim()
+        : 'Qyopic Admin';
+    const cleanDesc =
+      typeof body.description === 'string' && body.description.trim()
+        ? body.description.trim()
+        : `Curated ${cleanCategory.toLowerCase()} visual hosted on Cloudinary CDN.`;
+    const cleanSlug =
+      typeof body.slug === 'string' && body.slug.trim()
+        ? body.slug.trim()
+        : slugify(cleanTitle);
+
+    const cleanTags = Array.isArray(body.tags)
+      ? body.tags.map((t) => String(t).trim().toLowerCase()).filter(Boolean).slice(0, 10)
+      : typeof body.tags === 'string'
+        ? body.tags
+            .split(',')
+            .map((t) => t.trim().toLowerCase())
+            .filter(Boolean)
+            .slice(0, 10)
+        : [cleanCategory.toLowerCase()];
+
+    const finalTags =
+      cleanTags.length > 0 ? cleanTags : [cleanCategory.toLowerCase()];
+    const isFeatured = body.featured !== false;
+    const isPopular = body.popular === true;
+    const isLatest = body.latest !== false;
+
+    const contextStr = [
+      `title=${cleanContextValue(cleanTitle)}`,
+      `category=${cleanContextValue(cleanCategory)}`,
+      `source_type=${cleanContextValue(cleanSourceType)}`,
+      `creator=${cleanContextValue(cleanCreator)}`,
+      `description=${cleanContextValue(cleanDesc)}`,
+      `slug=${cleanContextValue(cleanSlug)}`,
+      `featured=${String(isFeatured)}`,
+      `popular=${String(isPopular)}`,
+      `latest=${String(isLatest)}`,
+    ].join('|');
+    const tagsStr = finalTags.join(',');
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    const signature = await signCloudinaryParams(
+      {
+        context: contextStr,
+        public_id: publicId,
+        tags: tagsStr,
+        timestamp,
+        type: 'upload',
+      },
+      apiSecret
+    );
+
+    const explicitForm = new FormData();
+    explicitForm.append('public_id', publicId);
+    explicitForm.append('type', 'upload');
+    explicitForm.append('context', contextStr);
+    explicitForm.append('tags', tagsStr);
+    explicitForm.append('api_key', apiKey);
+    explicitForm.append('timestamp', String(timestamp));
+    explicitForm.append('signature', signature);
+
+    const explicitRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/explicit`,
+      {
+        method: 'POST',
+        body: explicitForm,
+      }
+    );
+
+    const explicitResult = (await explicitRes.json()) as CloudinaryResource & {
+      error?: { message?: string };
+    };
+
+    if (!explicitRes.ok || !explicitResult.public_id) {
+      return jsonResponse(
+        {
+          error:
+            explicitResult.error?.message ||
+            'Failed to update image metadata on Cloudinary.',
+        },
+        502
+      );
+    }
+
+    const updatedItem = mapCloudinaryResourceToItem({
+      ...explicitResult,
+      tags: finalTags,
+      context: {
+        custom: {
+          title: cleanTitle,
+          category: cleanCategory,
+          source_type: cleanSourceType,
+          creator: cleanCreator,
+          description: cleanDesc,
+          slug: cleanSlug,
+          featured: String(isFeatured),
+          popular: String(isPopular),
+          latest: String(isLatest),
+        },
+      },
+    });
+
+    return jsonResponse({ image: updatedItem });
   }
 
   // DELETE /api/media/:id (Admin only)

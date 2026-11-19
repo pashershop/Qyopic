@@ -312,6 +312,13 @@ export default function App() {
             onImageUploaded={(newImg) =>
               setImages((prev) => [newImg, ...prev])
             }
+            onImageUpdated={(updatedImg) =>
+              setImages((prev) =>
+                prev.map((item) =>
+                  item.id === updatedImg.id ? updatedImg : item
+                )
+              )
+            }
             onImageDeleted={(deletedId) =>
               setImages((prev) => prev.filter((item) => item.id !== deletedId))
             }
