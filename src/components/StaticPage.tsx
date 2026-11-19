@@ -130,7 +130,7 @@ export function StaticPage({ page, onBackHome }: StaticPageProps) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M13.5 21v-8.2h2.75l.41-3.2H13.5V7.56c0-.93.26-1.56 1.59-1.56h1.7V3.14c-.3-.04-1.31-.14-2.49-.14-2.46 0-4.15 1.5-4.15 4.26V9.6H7.35v3.2h2.8V21h3.35z" />
                 </svg>
-                <span>facebook.com/mdrobinmia0</span>
+                <span>Facebook Profile</span>
               </a>
             </div>
           </>

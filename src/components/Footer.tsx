@@ -219,10 +219,9 @@ export function Footer({ onNavigatePath, onResetHome }: FooterProps) {
               href="https://www.facebook.com/mdrobinmia0"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-medium text-[#0A0A0A] hover:underline underline-offset-4"
+              className="inline-flex items-center font-medium text-[#0A0A0A] hover:underline underline-offset-4"
             >
               <span>MD Robin Mia</span>
-              <span className="text-[#71717A] font-normal">(@mdrobinmia0)</span>
             </a>
           </p>
         </div>
